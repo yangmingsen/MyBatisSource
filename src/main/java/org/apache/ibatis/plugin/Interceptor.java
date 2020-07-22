@@ -26,10 +26,10 @@ import java.util.Properties;
  */
 public interface Interceptor {
 
-  //拦截
+  //拦截  //jdk动态代码中的InvocationHandler.invoke()方法执行里，这个方法会被调用
   Object intercept(Invocation invocation) throws Throwable;
 
-  //插入
+  //插入  //生成一个代理对象
   Object plugin(Object target);
 
   //设置属性

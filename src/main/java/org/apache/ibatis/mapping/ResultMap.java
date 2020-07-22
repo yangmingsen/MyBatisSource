@@ -30,18 +30,58 @@ import org.apache.ibatis.session.Configuration;
 /**
  * 结果映射
  * MyBatis 中最重要最强大的元素
+ *
+ * 1. ResultMap对象是结果集中的一行记录和一个java对象的对应关系。
+ * 2. ResultMap由id,type等基本的属性组成外，还包含多个ResultMapping对象。这类似于一个java对象由多个属性组成一个道理。
+ *
+ *
+ * <resultMap type="com.ashan.mybatis.User" id="detailUserResultMap"> <!-- 整个resultMap会被解析成一个ResultMap对应 -->
+ *
+ * 		<constructor>
+ * 			<idArg column="user_id" javaType="String"/>  <!-- idArg会被解析成一个resultMapping对象 -->
+ * 			<arg column="user_name"/> <!-- resultMapping对象 -->
+ * 		</constructor>
+ *
+ * 		<result property="password" column="user_pwd" /> <!-- resultMapping对象 -->
+ * 		<result property="type" column="user_type" javaType="com.ashan.mybatis.UserType" <!-- resultMapping对象 -->
+ * 		       typeHandler="com.ashan.mybatis.UserTypeHandler"/>
+ * 		<result property="svcnum" column="svc_num" /> <!-- resultMapping对象 -->
+ *
+ * 		<association property="cust" javaType="com.ashan.mybatis.Cust"> <!-- resultMapping对象 这个resultMapping对象指向了另一个ResultMap-->
+ * 			<id property="id" column="cust_id"/>
+ * 			<result property="custname" column="cust_name"/>
+ * 			<result property="certNo" column="cert_no"/>
+ * 		</association>
+ *
+ * 		<collection property="accts" ofType="com.ashan.mybatis.Acct">
+ * 			<id property="id" column="acct_id" />
+ * 			<result property="payName" column="pay_name"/>
+ * 			<result property="bankNo" column="bank_no"/>
+ * 		</collection>
+ *
+ * 	</resultMap>
+ *
  */
 public class ResultMap {
   private String id;
   private Class<?> type;
+  //所有的resultMapping对象，包括constructor/idArg,constructor/arg,result,association,collection,但不包括association和collection里的子节点
   private List<ResultMapping> resultMappings;
+  //包括constructor/idArg,id
   private List<ResultMapping> idResultMappings;
+  //constructor里的子节点
   private List<ResultMapping> constructorResultMappings;
+  //除constructor里的子节点,其他都是，result,association,collection,id
   private List<ResultMapping> propertyResultMappings;
+  //所有被映射的列
   private Set<String> mappedColumns;
+  //比较少用
   private Discriminator discriminator;
+  //是否有内映射，上图中association, collection都为内映射,内查询不算（就是的reulst节点中配置select属性的情况）
   private boolean hasNestedResultMaps;
+  //是否有查询
   private boolean hasNestedQueries;
+  //是否要求自动映射
   private Boolean autoMapping;
 
   private ResultMap() {

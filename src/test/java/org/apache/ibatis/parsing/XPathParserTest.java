@@ -26,7 +26,7 @@ public class XPathParserTest {
 
   @Test
   public void shouldTestXPathParserMethods() throws Exception {
-    String resource = "resources/nodelet_test.xml";
+    String resource = "src/test/resources/nodelet_test.xml";
     InputStream inputStream = Resources.getResourceAsStream(resource);
     XPathParser parser = new XPathParser(inputStream, false, null, null);
     assertEquals((Long)1970l, parser.evalLong("/employee/birth_date/year"));

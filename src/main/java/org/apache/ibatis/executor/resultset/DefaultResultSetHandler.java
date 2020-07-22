@@ -158,14 +158,16 @@ public class DefaultResultSetHandler implements ResultSetHandler {
     final List<Object> multipleResults = new ArrayList<Object>();
 
     int resultSetCount = 0;
+    //获取第一个ResultSet,通常只会有一个
     ResultSetWrapper rsw = getFirstResultSet(stmt);
-
+    //从配置中读取对应的ResultMap，通常也只会有一个
     List<ResultMap> resultMaps = mappedStatement.getResultMaps();
     //一般resultMaps里只有一个元素
     int resultMapCount = resultMaps.size();
     validateResultMapsCount(rsw, resultMapCount);
     while (rsw != null && resultMapCount > resultSetCount) {
       ResultMap resultMap = resultMaps.get(resultSetCount);
+      //完成映射，将结果加到入multipleResults中
       handleResultSet(rsw, resultMap, multipleResults, null);
       rsw = getNextResultSet(stmt);
       cleanUpAfterHandlingResultSet();
@@ -282,11 +284,11 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   //
 
   private void handleRowValues(ResultSetWrapper rsw, ResultMap resultMap, ResultHandler resultHandler, RowBounds rowBounds, ResultMapping parentMapping) throws SQLException {
-    if (resultMap.hasNestedResultMaps()) {
+    if (resultMap.hasNestedResultMaps()) { //有子映射或内映射的情况
       ensureNoRowBounds();
       checkResultHandler();
       handleRowValuesForNestedResultMap(rsw, resultMap, resultHandler, rowBounds, parentMapping);
-    } else {
+    } else { //没有子映射或内映射
       handleRowValuesForSimpleResultMap(rsw, resultMap, resultHandler, rowBounds, parentMapping);
     }
   }  
@@ -311,8 +313,11 @@ public class DefaultResultSetHandler implements ResultSetHandler {
     DefaultResultContext resultContext = new DefaultResultContext();
     skipRows(rsw.getResultSet(), rowBounds);
     while (shouldProcessMoreRows(resultContext, rowBounds) && rsw.getResultSet().next()) {
+      //discriminator的处理,可以根据条件选择不同的映射
       ResultMap discriminatedResultMap = resolveDiscriminatedResultMap(rsw.getResultSet(), resultMap, null);
+      //真正从ResultSet中映射出一个对象
       Object rowValue = getRowValue(rsw, discriminatedResultMap);
+      //加入resultHandler.resultList中
       storeObject(resultHandler, resultContext, rowValue, parentMapping, rsw.getResultSet());
     }
   }
@@ -350,9 +355,9 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   // GET VALUE FROM ROW FOR SIMPLE RESULT MAP
   //
 
-  //核心，取得一行的值
+  //核心，取得一行的值  //没有内映射
   private Object getRowValue(ResultSetWrapper rsw, ResultMap resultMap) throws SQLException {
-    //实例化ResultLoaderMap(延迟加载器)
+    //实例化ResultLoaderMap(延迟加载器)  //实例化一个对象,类型为resultMap.getType(),最终调用了ObjectFactory.create()方法
     final ResultLoaderMap lazyLoader = new ResultLoaderMap();
     //调用自己的createResultObject,内部就是new一个对象(如果是简单类型，new完也把值赋进去)
     Object resultObject = createResultObject(rsw, resultMap, lazyLoader, null);
@@ -365,6 +370,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
         //这里把每个列的值都赋到相应的字段里去了
     	foundValues = applyAutomaticMappings(rsw, resultMap, metaObject, null) || foundValues;
       }
+      //映射result节点
       foundValues = applyPropertyMappings(rsw, resultMap, metaObject, lazyLoader, null) || foundValues;
       foundValues = lazyLoader.size() > 0 || foundValues;
       resultObject = foundValues ? resultObject : null;
@@ -554,8 +560,11 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   //
 
   private Object createResultObject(ResultSetWrapper rsw, ResultMap resultMap, ResultLoaderMap lazyLoader, String columnPrefix) throws SQLException {
+    //构造方法中的参数类型
     final List<Class<?>> constructorArgTypes = new ArrayList<Class<?>>();
+    //构造方法中具体值
     final List<Object> constructorArgs = new ArrayList<Object>();
+    //根据构造方法生成对象
     final Object resultObject = createResultObject(rsw, resultMap, constructorArgTypes, constructorArgs, columnPrefix);
     if (resultObject != null && !typeHandlerRegistry.hasTypeHandler(resultMap.getType())) {
       final List<ResultMapping> propertyMappings = resultMap.getPropertyResultMappings();
@@ -575,6 +584,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
       throws SQLException {
 	//得到result type
     final Class<?> resultType = resultMap.getType();
+
     final MetaClass metaType = MetaClass.forClass(resultType);
     final List<ResultMapping> constructorMappings = resultMap.getConstructorResultMappings();
     if (typeHandlerRegistry.hasTypeHandler(resultType)) {

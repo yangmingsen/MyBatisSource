@@ -94,6 +94,10 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
     return configuration;
   }
 
+  //这个是最终创建SqlSession对象的方法，需要三个参数
+  //execType,这个示例使用的是configuration.getDefaultExecutorType(),即在Configuration默认配置的
+  //事务隔离等级，我们对数据库操作里一般都不会带这个属性，这个属性由数据库分配即可
+  //autoCommit:这个一般都是false，不然事务将没有意义
   private SqlSession openSessionFromDataSource(ExecutorType execType, TransactionIsolationLevel level, boolean autoCommit) {
     Transaction tx = null;
     try {

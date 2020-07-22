@@ -35,7 +35,10 @@ import org.apache.ibatis.session.Configuration;
  */
 /**
  * 绑定的SQL,是从SqlSource而来，将动态内容都处理完成得到的SQL语句字符串，其中包括?,还有绑定的参数
- * 
+ *
+ * 1. sql:看代码里的注解，这个sql已经是经过了一些处理，可以被jdbc执行的了。xml里配置的sql可能有占位符#{username},这里的sql占位符已经被替换成"?"号了。
+ * 2. parameterMappings:执行sql对象的实际的参数。由此可以判断，每执行一条sql都会创建一个BoundSql对象。
+ *
  */
 public class BoundSql {
 

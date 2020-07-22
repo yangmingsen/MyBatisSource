@@ -27,6 +27,7 @@ package org.apache.ibatis.mapping;
  */
 public interface SqlSource {
 
+  //其中paramenterObject为运行sql里的实际参数
   BoundSql getBoundSql(Object parameterObject);
 
 }

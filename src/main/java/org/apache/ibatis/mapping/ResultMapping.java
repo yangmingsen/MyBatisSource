@@ -31,6 +31,9 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
 /**
  * 结果映射
  * MyBatis 中最重要最强大的元素
+ *
+ * 1.ResultMapping对象是结果集中的列与java对象的属性之间的对应关系
+ * 2.ResultMapping最主要的属性column(结果集字段名),property(java对象的属性)，ResultMapping可以指向一个内查询或内映射。
  */
 public class ResultMapping {
 

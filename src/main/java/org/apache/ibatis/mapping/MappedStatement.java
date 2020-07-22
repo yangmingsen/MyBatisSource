@@ -34,28 +34,37 @@ import org.apache.ibatis.session.Configuration;
 /**
  * 映射的语句
  *
+ * 1. 一个MappedStatement对象对应Mapper配置文件中的一个select/update/insert/delete节点，主要描述的是一条SQL语句
+ *
  */
 public final class MappedStatement {
 
   private String resource;
   private Configuration configuration;
+  //节点中的id属性加要命名空间
   private String id;
+  //直接从节点属性中取
   private Integer fetchSize;
+  //直接从节点属性中取
   private Integer timeout;
   private StatementType statementType;
   private ResultSetType resultSetType;
-  //SQL源码
+  //SQL源码 对应一条SQL语句
   private SqlSource sqlSource;
+  //每条语句都对就一个缓存，如果有的话。
   private Cache cache;
+  //这个已经过时了
   private ParameterMap parameterMap;
   private List<ResultMap> resultMaps;
   private boolean flushCacheRequired;
   private boolean useCache;
   private boolean resultOrdered;
+  //SQL的类型,select/update/insert/detete
   private SqlCommandType sqlCommandType;
   private KeyGenerator keyGenerator;
   private String[] keyProperties;
   private String[] keyColumns;
+  //是否有内映射
   private boolean hasNestedResultMaps;
   private String databaseId;
   private Log statementLog;
