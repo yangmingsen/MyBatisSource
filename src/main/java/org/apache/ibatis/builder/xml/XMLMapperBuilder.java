@@ -53,6 +53,21 @@ import org.apache.ibatis.type.TypeHandler;
 /**
  * XML映射构建器，建造者模式,继承BaseBuilder
  *
+ * XMLMapperBuilder对配置文件中的resultMap元素的解析并生成ResultMap对象的分析基本完成。这里总结几点：
+ *   ResultMap对象是结果集中的一行记录和一个java对象的对应关系。
+ *
+ *   ResultMapping对象是结果集中的列与java对象的属性之间的对应关系。
+ *
+ *   ResultMapp由id,type等基本的属性组成外，还包含多个ResultMapping对象。这类似于一个java对象由多个属性组成一个道理。
+ *
+ *   ResultMapping最主要的属性column(结果集字段名),property(java对象的属性)，ResultMapping可以指向一个内查询或内映射。
+ *
+ *   XMLMapperBuilder调用如下方法来解析并生成ResultMap对象
+ *        resultMapElement(XNode resultMapNode, List<ResultMapping> additionalResultMappings)
+ *
+ *   在resultMapElement方法中调用 private ResultMapping buildResultMappingFromContext(XNode context, Class<?> resultType, ArrayList<ResultFlag> flags) 方法来子节点解析成ResultMapping对象。
+ *
+ *   ResultMap和ResultMapping对象都是由相对应的Builder构建的。Builder只是进行了一些数据验证，并没有太多的业务逻辑。
  */
 public class XMLMapperBuilder extends BaseBuilder {
 
@@ -116,11 +131,32 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
 	//配置mapper元素
-//	<mapper namespace="org.mybatis.example.BlogMapper">
-//	  <select id="selectBlog" parameterType="int" resultType="Blog">
-//	    select * from Blog where id = #{id}
-//	  </select>
-//	</mapper>
+  //<mapper namespace="com.onlinelearn.mapper.CeNoteMapper" >
+  //  <resultMap id="BaseResultMap" type="com.onlinelearn.pojo.CeNote" >
+  //    <id column="id" property="id" jdbcType="INTEGER" />
+  //    <result column="noter_id" property="noterId" jdbcType="VARCHAR" />
+  //    <result column="course_id" property="courseId" jdbcType="INTEGER" />
+  //  </resultMap>
+  //  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+  //          select
+  //         <include refid="Base_Column_List" />
+  //          from ce_note
+  //          where id = #{id,jdbcType=INTEGER}
+  //  </select>
+  //
+  //  <select id="selectBlog" parameterType="int" resultType="Blog">
+  //	    select * from Blog where id = #{id}
+  //  </select>
+  //
+  //  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+  //    delete from ce_note
+  //      where id = #{id,jdbcType=INTEGER}
+  //  </delete>
+  //
+  //    <sql id="Base_Column_List" >
+  //         id, noter_id, course_id, video_id, content, favour_num, time
+  //    </sql>
+  //</mapper>
   private void configurationElement(XNode context) {
     try {
       //1.配置namespace
@@ -317,6 +353,7 @@ public class XMLMapperBuilder extends BaseBuilder {
     String id = resultMapNode.getStringAttribute("id",
         resultMapNode.getValueBasedIdentifier());
     //一般拿type就可以了，后面3个难道是兼容老的代码？
+    // 对应ResultMap.Type,这里可以看到这个type可以通过很多个属性进行配置
     String type = resultMapNode.getStringAttribute("type",
         resultMapNode.getStringAttribute("ofType",
             resultMapNode.getStringAttribute("resultType",
@@ -326,13 +363,16 @@ public class XMLMapperBuilder extends BaseBuilder {
 //    <result property="doorCount" column="door_count" />
 //  </resultMap>
     String extend = resultMapNode.getStringAttribute("extends");
-    //autoMapping
+    //autoMapping   //是否自动映射
     Boolean autoMapping = resultMapNode.getBooleanAttribute("autoMapping");
+    //将type解析成class,可以是别名，也可以是全限定名
     Class<?> typeClass = resolveClass(type);
     Discriminator discriminator = null;
+    //这个resultMappings将对应ResultMap.resultMappings
     List<ResultMapping> resultMappings = new ArrayList<ResultMapping>();
     resultMappings.addAll(additionalResultMappings);
     List<XNode> resultChildren = resultMapNode.getChildren();
+    //解析<resultMap ...>下的子节点
     for (XNode resultChild : resultChildren) {
       if ("constructor".equals(resultChild.getName())) {
         //解析result map的constructor
@@ -346,12 +386,15 @@ public class XMLMapperBuilder extends BaseBuilder {
           flags.add(ResultFlag.ID);
         }
         //调5.1.1 buildResultMappingFromContext,得到ResultMapping
+        //解析其他节点,主要有result、association及collection
+        //在这里可以说明一个result、association及collection都会被解析成一个resultMapping对象，即使他们有很多子元素
         resultMappings.add(buildResultMappingFromContext(resultChild, typeClass, flags));
       }
     }
     //最后再调ResultMapResolver得到ResultMap
     ResultMapResolver resultMapResolver = new ResultMapResolver(builderAssistant, id, typeClass, extend, discriminator, resultMappings, autoMapping);
     try {
+      //得到resultMappings后，生成ResultMap并加入到Configuration中
       return resultMapResolver.resolve();
     } catch (IncompleteElementException  e) {
       configuration.addIncompleteResultMap(resultMapResolver);
@@ -365,13 +408,17 @@ public class XMLMapperBuilder extends BaseBuilder {
 //</constructor>
   private void processConstructorElement(XNode resultChild, Class<?> resultType, List<ResultMapping> resultMappings) throws Exception {
     List<XNode> argChildren = resultChild.getChildren();
+    //遍历子节点
     for (XNode argChild : argChildren) {
       List<ResultFlag> flags = new ArrayList<ResultFlag>();
       //结果标志加上ID和CONSTRUCTOR
       flags.add(ResultFlag.CONSTRUCTOR);
       if ("idArg".equals(argChild.getName())) {
+        //标识为一个ID属性
         flags.add(ResultFlag.ID);
       }
+      //创建一个ResultMapping对象，并加入resultMappings
+      //这里说明了，constructor下有多个几子节点，就会产生多少个resultMapping对象
       resultMappings.add(buildResultMappingFromContext(argChild, resultType, flags));
     }
   }
@@ -444,15 +491,25 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   //5.1.1 构建resultMap
+
+  /***
+   * buildResultMappingFromContext()方法生成了一个ResultMapping对象，解析如下节点都会调用这个方法来实现：
+   * constructor/idArg
+   * constructor/arg
+   * result
+   * association
+   * collection
+   *
+   */
   private ResultMapping buildResultMappingFromContext(XNode context, Class<?> resultType, List<ResultFlag> flags) throws Exception {
 	//<id property="id" column="author_id"/>
 	//<result property="username" column="author_username"/>
-    String property = context.getStringAttribute("property");
-    String column = context.getStringAttribute("column");
+    String property = context.getStringAttribute("property"); //获取java字段
+    String column = context.getStringAttribute("column");//获取数据库表字段
     String javaType = context.getStringAttribute("javaType");
     String jdbcType = context.getStringAttribute("jdbcType");
     String nestedSelect = context.getStringAttribute("select");
-    //处理嵌套的result map
+    //处理嵌套的result map   //这里需要特殊说明，一个resultMapping可以对应一个resultMap对应，我们称之为内部映射
     String nestedResultMap = context.getStringAttribute("resultMap",
         processNestedResultMappings(context, Collections.<ResultMapping> emptyList()));
     String notNullColumn = context.getStringAttribute("notNullColumn");
@@ -469,9 +526,10 @@ public class XMLMapperBuilder extends BaseBuilder {
     return builderAssistant.buildResultMapping(resultType, property, column, javaTypeClass, jdbcTypeEnum, nestedSelect, nestedResultMap, notNullColumn, columnPrefix, typeHandlerClass, flags, resulSet, foreignColumn, lazy);
   }
   
-  //5.1.1.1 处理嵌套的result map
+  //5.1.1.1 处理嵌套的result map   生成一个内部的ReulstMapp对象，并加到Congruation中
   private String processNestedResultMappings(XNode context, List<ResultMapping> resultMappings) throws Exception {
 	  //处理association|collection|case
+    //只有association, collection, case节点才会生成内部映射，其他不生成，返回null
     if ("association".equals(context.getName())
         || "collection".equals(context.getName())
         || "case".equals(context.getName())) {
@@ -482,6 +540,7 @@ public class XMLMapperBuilder extends BaseBuilder {
 //如果不是嵌套查询
       if (context.getStringAttribute("select") == null) {
     	//则递归调用5.1 resultMapElement
+        //这里类似一个递归调用，需要注意内部映射的ID是Mybatis自动生成的，不是在配置文件里读取的
         ResultMap resultMap = resultMapElement(context, resultMappings);
         return resultMap.getId();
       }

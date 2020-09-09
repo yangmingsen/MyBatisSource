@@ -252,15 +252,17 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   private void handleResultSet(ResultSetWrapper rsw, ResultMap resultMap, List<Object> multipleResults, ResultMapping parentMapping) throws SQLException {
     try {
       if (parentMapping != null) {
+        //子映射
         handleRowValues(rsw, resultMap, null, RowBounds.DEFAULT, parentMapping);
       } else {
+        //一般情况resultHandler都为空,见ResultHandler.NO_RESULT_HANDLER
         if (resultHandler == null) {
           //如果没有resultHandler
           //新建DefaultResultHandler
           DefaultResultHandler defaultResultHandler = new DefaultResultHandler(objectFactory);
-          //调用自己的handleRowValues
+          //调用自己的handleRowValues   //生成对象，并加到defaultResultHandler.resultList集合中
           handleRowValues(rsw, resultMap, defaultResultHandler, rowBounds, null);
-          //得到记录的list
+          //得到记录的list  //将结果加入multipleResults中
           multipleResults.add(defaultResultHandler.getResultList());
         } else {
           //如果有resultHandler
@@ -287,8 +289,10 @@ public class DefaultResultSetHandler implements ResultSetHandler {
     if (resultMap.hasNestedResultMaps()) { //有子映射或内映射的情况
       ensureNoRowBounds();
       checkResultHandler();
+      //处理复杂映射(内映射)
       handleRowValuesForNestedResultMap(rsw, resultMap, resultHandler, rowBounds, parentMapping);
-    } else { //没有子映射或内映射
+    } else {
+      //没有子映射或内映射
       handleRowValuesForSimpleResultMap(rsw, resultMap, resultHandler, rowBounds, parentMapping);
     }
   }  
@@ -313,7 +317,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
     DefaultResultContext resultContext = new DefaultResultContext();
     skipRows(rsw.getResultSet(), rowBounds);
     while (shouldProcessMoreRows(resultContext, rowBounds) && rsw.getResultSet().next()) {
-      //discriminator的处理,可以根据条件选择不同的映射
+      //discriminator的处理,可以根据条件选择不同的ResultMap
       ResultMap discriminatedResultMap = resolveDiscriminatedResultMap(rsw.getResultSet(), resultMap, null);
       //真正从ResultSet中映射出一个对象
       Object rowValue = getRowValue(rsw, discriminatedResultMap);
@@ -399,18 +403,21 @@ public class DefaultResultSetHandler implements ResultSetHandler {
       throws SQLException {
     final List<String> mappedColumnNames = rsw.getMappedColumnNames(resultMap, columnPrefix);
     boolean foundValues = false;
+    //获取需要映射的ResultMapping
     final List<ResultMapping> propertyMappings = resultMap.getPropertyResultMappings();
     for (ResultMapping propertyMapping : propertyMappings) {
       final String column = prependPrefix(propertyMapping.getColumn(), columnPrefix);
       if (propertyMapping.isCompositeResult() 
           || (column != null && mappedColumnNames.contains(column.toUpperCase(Locale.ENGLISH))) 
           || propertyMapping.getResultSet() != null) {
+        //在结果中的获取对应的值
         Object value = getPropertyMappingValue(rsw.getResultSet(), metaObject, propertyMapping, lazyLoader, columnPrefix);
         // issue #541 make property optional
         final String property = propertyMapping.getProperty();
         // issue #377, call setter on nulls
         if (value != NO_VALUE && property != null && (value != null || configuration.isCallSettersOnNulls())) {
           if (value != null || !metaObject.getSetterType(property).isPrimitive()) {
+            //设置属性
             metaObject.setValue(property, value);
           }
           foundValues = true;
@@ -439,9 +446,12 @@ public class DefaultResultSetHandler implements ResultSetHandler {
 
   //自动映射咯
   private boolean applyAutomaticMappings(ResultSetWrapper rsw, ResultMap resultMap, MetaObject metaObject, String columnPrefix) throws SQLException {
+    //获取结果集中在resultMap中没有配置的列名
+    //如果resultMap中只设置了resultType="java.util.HashMap"的话，全都会在这里完成映射
     final List<String> unmappedColumnNames = rsw.getUnmappedColumnNames(resultMap, columnPrefix);
     boolean foundValues = false;
     for (String columnName : unmappedColumnNames) {
+      //属性名就是列名
       String propertyName = columnName;
       if (columnPrefix != null && !columnPrefix.isEmpty()) {
         // When columnPrefix is specified,
@@ -452,7 +462,9 @@ public class DefaultResultSetHandler implements ResultSetHandler {
           continue;
         }
       }
+      //是否有对应的属性
       final String property = metaObject.findProperty(propertyName, configuration.isMapUnderscoreToCamelCase());
+      //是否有对应的set方法
       if (property != null && metaObject.hasSetter(property)) {
         final Class<?> propertyType = metaObject.getSetterType(property);
         if (typeHandlerRegistry.hasTypeHandler(propertyType)) {
@@ -765,7 +777,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   }
 
   //
-  // DISCRIMINATOR
+  // DISCRIMINATOR  – 使用结果值来决定使用哪个 resultMap
   //
 
   public ResultMap resolveDiscriminatedResultMap(ResultSet rs, ResultMap resultMap, String columnPrefix) throws SQLException {

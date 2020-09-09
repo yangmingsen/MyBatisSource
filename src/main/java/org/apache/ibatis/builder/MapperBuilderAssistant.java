@@ -225,6 +225,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
       resultMappings.addAll(extendedResultMappings);
     }
     resultMapBuilder.discriminator(discriminator);
+    //生成ResultMap对象
     ResultMap resultMap = resultMapBuilder.build();
     configuration.addResultMap(resultMap);
     return resultMap;
@@ -407,7 +408,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     statementBuilder.timeout(timeout);
   }
 
-  //构建result map
+  //构建ResultMapping
   public ResultMapping buildResultMapping(
       Class<?> resultType,
       String property,

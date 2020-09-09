@@ -119,13 +119,17 @@ public class ResultMap {
       resultMap.idResultMappings = new ArrayList<ResultMapping>();
       resultMap.constructorResultMappings = new ArrayList<ResultMapping>();
       resultMap.propertyResultMappings = new ArrayList<ResultMapping>();
+      //遍历所有的resultMapping
       for (ResultMapping resultMapping : resultMap.resultMappings) {
+        //如果其中一个resultMapping有内查询，则这个resultMap也就是有内查询
         resultMap.hasNestedQueries = resultMap.hasNestedQueries || resultMapping.getNestedQueryId() != null;
+        //如果其中一个resultMapping有内映射，则这个resultMap也就是有内映射
         resultMap.hasNestedResultMaps = resultMap.hasNestedResultMaps || (resultMapping.getNestedResultMapId() != null && resultMapping.getResultSet() == null);
         final String column = resultMapping.getColumn();
         if (column != null) {
           resultMap.mappedColumns.add(column.toUpperCase(Locale.ENGLISH));
         } else if (resultMapping.isCompositeResult()) {
+          //组合的配置
           for (ResultMapping compositeResultMapping : resultMapping.getComposites()) {
             final String compositeColumn = compositeResultMapping.getColumn();
             if (compositeColumn != null) {

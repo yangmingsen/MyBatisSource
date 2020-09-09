@@ -512,7 +512,7 @@ public class XMLConfigBuilder extends BaseBuilder {
 //
 //	10.2使用绝对url路径
 //	<mappers>
-//	  <mapper url="file:///var/mappers/AuthorMapper.xml"/>
+//	  <mapper ="file:///var/mappers/AuthorMapper.xml"/>
 //	  <mapper url="file:///var/mappers/BlogMapper.xml"/>
 //	  <mapper url="file:///var/mappers/PostMapper.xml"/>
 //	</mappers>

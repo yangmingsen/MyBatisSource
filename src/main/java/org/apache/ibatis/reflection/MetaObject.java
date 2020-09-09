@@ -37,9 +37,14 @@ import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
  */
 public class MetaObject {
 
-    //有一个原来的对象，对象包装器，对象工厂，对象包装器工厂
+//有一个原来的对象，对象包装器，对象工厂，对象包装器工厂
+
+  //原始的对象
   private Object originalObject;
+  //对原始对象的一个包装
   private ObjectWrapper objectWrapper;
+
+  //这两个属性基本不用，因为在Mybatis中都找不到ObjectWrapperFactory的有效实现类
   private ObjectFactory objectFactory;
   private ObjectWrapperFactory objectWrapperFactory;
 
@@ -135,6 +140,9 @@ public class MetaObject {
         return null;
       } else {
           //否则继续看下一层，递归调用getValue
+        //这里相当于递归调用，直到最后一层。例如user.cust.custId
+        //第一次递归cust.custId
+        //第二次递归custId，这个就是真正访问要返回的
        return metaValue.getValue(prop.getChildren());
       }
     } else {
