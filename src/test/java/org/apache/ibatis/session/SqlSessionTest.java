@@ -754,6 +754,11 @@ public class SqlSessionTest extends BaseDataTest {
     try {
       BlogMapper mapper = session.getMapper(BlogMapper.class);
       List<Map> posts = mapper.selectAllPosts();
+
+      posts.forEach( x -> System.out.println(x));
+      System.out.println();
+      posts.stream().filter(x -> x.get("AUTHOR_ID").toString().equals("101")).forEach( x -> System.out.println(x));
+
       assertEquals(5, posts.size());
     } finally {
       session.close();

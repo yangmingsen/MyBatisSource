@@ -53,12 +53,14 @@ class ResultSetWrapper {
     super();
     this.typeHandlerRegistry = configuration.getTypeHandlerRegistry();
     this.resultSet = rs;
+    //获取表meta(元数据结构)结构信息(含表定义：字段，字段类型）
     final ResultSetMetaData metaData = rs.getMetaData();
+    //获取某张表的字段总数(比如tag表有3个字段，那么就是3)
     final int columnCount = metaData.getColumnCount();
     for (int i = 1; i <= columnCount; i++) {
-      columnNames.add(configuration.isUseColumnLabel() ? metaData.getColumnLabel(i) : metaData.getColumnName(i));
-      jdbcTypes.add(JdbcType.forCode(metaData.getColumnType(i)));
-      classNames.add(metaData.getColumnClassName(i));
+      columnNames.add(configuration.isUseColumnLabel() ? metaData.getColumnLabel(i) : metaData.getColumnName(i)); //添加对应的 表字段名称
+      jdbcTypes.add(JdbcType.forCode(metaData.getColumnType(i))); // 添加对应的jdbc类型
+      classNames.add(metaData.getColumnClassName(i)); //添加对应的Java类型
     }
   }
 
